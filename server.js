@@ -6,14 +6,13 @@ app.get('/', function (req, res) {
   res.send('Hello World!')
 })
 
-app.get('/hello/:nom', function (req, res) {
-    if(res.param.nom)
-    {
-        res.send('Bonjour !', req.param.nom)
-    } else {
-        res.send('Quel est votre nom ?')
-    }
-  })
+app.get('/hello', function(req, res){
+	if(req.query.nom){
+		res.send("Bonjour " + req.query.nom + "!\n");
+	}else{
+		res.send("Quel es ton nom ?\n");
+	}
+});
 
 app.listen(PORT, function () {
   console.log('Example app listening on port ${PORT} !')
