@@ -22,13 +22,13 @@ app.get('/hello', function (req, res) {
 app.post('/chat', function (req, res) {
   if (req.body.msg === 'ville') {
     res.send('Nous sommes à Paris')
-  } else if (req.body.msg === 'météo') {
+  } else if (req.body.msg === 'meteo') {
     res.send('Il fait beau')
   } else {
     if (/ = /.test(req.body.msg)) {
       const [ cle, valeur ] = req.body.msg.split(' = ')
       const valeursExistantes = readValuesFromFile();
-      fs.writeFileSync('réponses.json', JSON.stringify({
+      fs.writeFileSync('reponses.json', JSON.stringify({
         ...valeursExistantes,
         [cle]: valeur
       }))
@@ -46,7 +46,7 @@ app.listen(PORT, function () {
 })
 
 function readValuesFromFile() {
-  const reponses = fs.readFileSync('réponses.json', { encoding: 'utf8' });
+  const reponses = fs.readFileSync('reponses.json', { encoding: 'utf8' });
   const valeursExistantes = JSON.parse(reponses);
   return valeursExistantes;
 }
