@@ -19,24 +19,41 @@ app.get('/hello', function (req, res) {
   }
 })
 
-app.post('/chat', function (req, res) {
+app.post('/chat', async function (req, res) {
   if (req.body.msg === 'ville') {
     res.send('Nous sommes à Paris')
-  } else if (req.body.msg === 'meteo') {
+  } else if (req.body.msg === 'météo') {
     res.send('Il fait beau')
   } else {
     if (/ = /.test(req.body.msg)) {
       const [ cle, valeur ] = req.body.msg.split(' = ')
-      const valeursExistantes = readValuesFromFile();
-      fs.writeFileSync('reponses.json', JSON.stringify({
+      let valeursExistantes
+      try {
+        valeursExistantes = await readValuesFromFile();
+      } catch (err) {
+        res.send('error while reading réponses.json', err)
+        return
+      }
+      const data = JSON.stringify({
         ...valeursExistantes,
         [cle]: valeur
-      }))
-      res.send('Merci pour cette information !')
+      })
+      try {
+        await writeFile('réponses.json', data)
+        res.send('Merci pour cette information !')
+      } catch (err) {
+        console.error('error while saving réponses.json', err)
+        res.send('Il y a eu une erreur lors de l\'enregistrement')
+      }
     } else {
       const cle = req.body.msg
-      const reponse = readValuesFromFile()[cle]
-      res.send(cle + ': ' + reponse)
+      try {
+        const values = await readValuesFromFile()
+        const reponse = values[cle]
+        res.send(cle + ': ' + reponse)
+      } catch (err) {
+        res.send('error while reading réponses.json', err)
+      }
     }
   }
 })
@@ -45,8 +62,7 @@ app.listen(PORT, function () {
   console.log('Example app listening on port ' + PORT)
 })
 
-function readValuesFromFile() {
-  const reponses = fs.readFileSync('reponses.json', { encoding: 'utf8' });
-  const valeursExistantes = JSON.parse(reponses);
-  return valeursExistantes;
+async function readValuesFromFile() {
+  const reponses = await readFile('réponses.json', { encoding: 'utf8' })
+  return JSON.parse(reponses)
 }
