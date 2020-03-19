@@ -11,5 +11,8 @@ client.connect(async err => {
     // affiche la liste des documents de la collection dates dans la sortie standard
     const dates = await collection.find({}).toArray();
     console.log('dates:', dates)
+
+    await db.collection('dates').insertOne({date: new Date()})
+
     client.close();
 });
