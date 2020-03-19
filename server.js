@@ -1,6 +1,15 @@
 const fs = require('fs')
+const util = require('util')
 const express = require('express')
-const app = express()
+const MongoClient = require('mongodb').MongoClient;
+
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+const DATABASE_NAME = 'chat-bot';
+
+const app = express();
+
+const readFile = util.promisify(fs.readFile);
+const writeFile = util.promisify(fs.writeFile);
 
 app.use(express.json()) // for parsing application/json
 
@@ -66,3 +75,18 @@ async function readValuesFromFile() {
   const reponses = await readFile('réponses.json', { encoding: 'utf8' })
   return JSON.parse(reponses)
 }
+
+(async () => {
+  const client = new MongoClient(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+  await client.connect();
+  const collection = client.db(DATABASE_NAME); //.collection("dates");
+  // affiche la liste des documents de la collection dates dans la sortie standard
+  // const dates = await collection.find({}).toArray();
+  // console.log('dates:', dates)
+
+  // await collection.insertOne({ date: new Date() });
+
+  console.log('successfully connected to', DATABASE_NAME);
+
+  await client.close();
+})();
