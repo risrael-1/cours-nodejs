@@ -16,6 +16,8 @@ app.use(express.json()) // for parsing application/json
 
 const PORT = process.env.PORT || 3000;
 
+let collection
+
 app.get('/', function (req, res) {
   res.send('Hello World!')
 })
@@ -31,24 +33,23 @@ app.get('/hello', function (req, res) {
 
 app.get('/messages/all', async function (req, res) {
 
-  const client = new MongoClient(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-  await client.connect();
-  const collection = client.db(DATABASE_NAME).collection(COLLECTION_NAME);
-  console.log('successfully connected to', DATABASE_NAME);
-
   const messages = await collection.find({}).toArray();
-  // await collection.insertOne({ date: new Date() });
-
-  await client.close();
 
   res.send(messages)
 })
 
 app.post('/chat', async function (req, res) {
+
+  async function sendReply(reply) {
+    await collection.insertOne({ from: 'user', msg: req.body.msg })
+    await collection.insertOne({ from: 'bot', msg: reply })
+    res.send(reply)
+  }
+
   if (req.body.msg === 'ville') {
-    res.send('Nous sommes à Paris')
+    sendReply('Nous sommes à Paris')
   } else if (req.body.msg === 'météo') {
-    res.send('Il fait beau')
+    sendReply('Il fait beau')
   } else {
     if (/ = /.test(req.body.msg)) {
       const [ cle, valeur ] = req.body.msg.split(' = ')
@@ -56,7 +57,7 @@ app.post('/chat', async function (req, res) {
       try {
         valeursExistantes = await readValuesFromFile();
       } catch (err) {
-        res.send('error while reading réponses.json', err)
+        sendReply('error while reading réponses.json', err)
         return
       }
       const data = JSON.stringify({
@@ -65,27 +66,35 @@ app.post('/chat', async function (req, res) {
       })
       try {
         await writeFile('réponses.json', data)
-        res.send('Merci pour cette information !')
+        sendReply('Merci pour cette information !')
       } catch (err) {
         console.error('error while saving réponses.json', err)
-        res.send('Il y a eu une erreur lors de l\'enregistrement')
+        sendReply('Il y a eu une erreur lors de l\'enregistrement')
       }
     } else {
       const cle = req.body.msg
       try {
         const values = await readValuesFromFile()
         const reponse = values[cle]
-        res.send(cle + ': ' + reponse)
+        sendReply(cle + ': ' + reponse)
       } catch (err) {
-        res.send('error while reading réponses.json', err)
+        sendReply('error while reading réponses.json', err)
       }
     }
   }
 })
 
-app.listen(PORT, function () {
-  console.log('Example app listening on port ' + PORT)
-})
+;(async () => {
+  console.log(`Connecting to ${DATABASE_NAME}...`)
+  const client = new MongoClient(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  await client.connect()
+  collection = client.db(DATABASE_NAME).collection(COLLECTION_NAME)
+  console.log(`Successfully connected to ${DATABASE_NAME}`)
+  app.listen(PORT, function () {
+    console.log('Example app listening on port ' + PORT)
+  })
+  // await client.close() // should be done when the server is going down
+})()
 
 async function readValuesFromFile() {
   const reponses = await readFile('réponses.json', { encoding: 'utf8' })
